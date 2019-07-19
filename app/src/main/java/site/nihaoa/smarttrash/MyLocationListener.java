@@ -28,11 +28,15 @@ import com.baidu.mapapi.search.route.TransitRouteResult;
 import com.baidu.mapapi.search.route.WalkingRoutePlanOption;
 import com.baidu.mapapi.search.route.WalkingRouteResult;
 
+import java.io.IOException;
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.OkHttpClient;
 import site.nihaoa.smarttrash.rep.JdbcHelper;
 import site.nihaoa.smarttrash.rep.Lese;
+import site.nihaoa.smarttrash.rep.OkhttpHelper;
 
 public class MyLocationListener extends BDAbstractLocationListener {
     private MapView mapView;
@@ -100,17 +104,28 @@ public class MyLocationListener extends BDAbstractLocationListener {
         if (location == null || mapView == null){
             return;
         }
+        Log.d("main","位置信息："+location.getLongitude()+"  -  "+location.getLatitude()+"--"+location.getLocationDescribe());
         MyLocationData locData = new MyLocationData.Builder()
                 .accuracy(location.getRadius())
                 // 此处设置开发者获取到的方向信息，顺时针0-360
                 .direction(location.getDirection()).latitude(location.getLatitude())
                 .longitude(location.getLongitude()).build();
         baiduMap.setMyLocationData(locData);
-        LatLng latLng = new LatLng(location.getLatitude(),location.getAltitude());
+        final LatLng latLng = new LatLng(location.getLongitude(),location.getLatitude());
+
         persent = latLng;
         new Thread(new Runnable() {
             @Override
             public void run() {
+                OkHttpClient client = OkhttpHelper.getOkHttpClient();
+                try {
+                    client.newCall(OkhttpHelper.getMusicSearchRequst(latLng.longitude,latLng.latitude)).execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                if(true)
+                    return;
                 List<OverlayOptions> optionsList = addMark();
                 baiduMap.clear();
                 for (OverlayOptions options:optionsList)
@@ -120,7 +135,7 @@ public class MyLocationListener extends BDAbstractLocationListener {
         if(first){
             MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),location.getLongitude()),15);
             baiduMap.animateMapStatus(mapStatusUpdate);
-            Log.d("main","位置信息："+location.getLatitude()+"  -  "+location.getAltitude()+"--"+location.getLocationDescribe());
+            Log.d("main","位置信息："+location.getLongitude()+"  -  "+location.getLatitude()+"--"+location.getLocationDescribe());
             Log.d("main","返回码："+location.getLocType());
             first = false;
         }
